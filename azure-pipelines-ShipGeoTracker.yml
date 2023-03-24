@@ -1,0 +1,60 @@
+﻿trigger:
+  branches:
+    include:
+    - master
+
+resources:
+- repo: self
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  tag: '$(Build.BuildId)'
+  buildConfiguration: 'Release'
+  targetFramework: 'net6.0'
+  testProjectName: 'ShipGeoTracker.UnitTests'
+
+steps:
+- task: UseDotNet@2
+  inputs:
+    packageType: sdk
+    version: '6.x'
+  displayName: 'netcore 6'
+
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'restore'
+    projects: '**/*.csproj'
+    feedsToUse: 'select'
+    version: '6.x'
+  displayName: 'Restore NuGet packages'
+
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'build'
+    projects: '**/*.csproj'
+    arguments: '--configuration $(buildConfiguration) --framework $(targetFramework)'
+  displayName: 'Build project'
+
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'test'
+    projects: '**/*Tests.csproj'
+    arguments: '--configuration $(buildConfiguration) --framework $(targetFramework)'
+  displayName: 'Run tests'
+
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'publish'
+    projects: '**/*.csproj'
+    arguments: '--configuration $(buildConfiguration) --framework $(targetFramework) --output $(Build.ArtifactStagingDirectory)'
+  displayName: 'Publish artifacts'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    artifactName: 'drop'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    publishLocation: 'Container'
+  displayName: 'Publish artifacts'
+
